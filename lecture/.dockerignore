@@ -1,0 +1,9 @@
+# keep the build context small
+data/
+work/
+slides/
+*.pdf
+*.zip
+*.tar.bz2
+*.tgz
+.DS_Store

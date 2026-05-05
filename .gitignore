@@ -1,0 +1,45 @@
+# Lecture data (~700 MB) — distributed via Dropbox; fetched at runtime by
+# student-environment/setup_data.sh.  See top-level README.
+lecture/data/
+lecture-data.tar.gz
+
+# Superseded by student-environment/.  Kept locally for reference but not
+# shipped to students.
+lecture/docker/
+lecture/docker-compose.yml
+
+# Superseded by 03_gammapy_joint_crab.ipynb
+lecture/notebooks/03_gammapy_joint.ipynb
+
+# Auto-regenerable from the .ipynb files
+lecture/notebooks/*.html
+
+# Other tutorial material I keep alongside this repo for reference
+# (not part of this lecture).
+fermipy-extra-master/
+fermipy-extra-master.zip
+fermipy-tutorial-master/
+fermipy-tutorial-master.zip
+fermi-summer-school-master/
+fermi-summer-school-master.zip
+gammapy-acme-main/
+gammapy-acme-main.zip
+fermi_lat.ipynb
+*.pdf
+
+# Build / dev scratch
+_staging/
+build/
+dist/
+*.egg-info/
+
+# IDE / OS / tool noise
+.DS_Store
+.claude/
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.jupyter/
+.python-version
