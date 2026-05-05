@@ -1,5 +1,6 @@
 #!/bin/bash
-# Instructor convenience: build the slim Docker image (no lecture data baked in).
+# Instructor convenience: build the Docker image. Lecture data is fetched
+# separately at runtime via setup_data.sh, not baked into the image.
 # Run me from anywhere; I cd to the repo root so docker build can see the
 # Dockerfile under student-environment/.
 set -euo pipefail

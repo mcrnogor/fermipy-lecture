@@ -1,126 +1,49 @@
-# Fermi-LAT + gammapy lecture environment
+# Running the lecture environment
 
-Self-contained setup for the four lecture notebooks:
+This folder has a Docker recipe and a conda recipe. Either one gets you a working environment with fermipy 1.4, gammapy 1.3, fermitools 2.2, JupyterLab, and the four lecture notebooks.
 
-- `00_data_levels.ipynb` — what FT1/FT2/CCUBE/etc. actually are
-- `01_fermipy_pg1553.ipynb` — fermipy on PG 1553+113
-- `02_fermipy_txs0506.ipynb` — fermipy on TXS 0506+056 (the IceCube blazar)
-- `03_gammapy_joint_crab.ipynb` — gammapy 5-instrument joint Crab fit
+The lecture data itself (~700 MB of FT1/FT2 plus the precomputed source maps for PG 1553 and TXS 0506) lives separately on Dropbox and gets pulled at first run by [`setup_data.sh`](setup_data.sh). That keeps the image/env reasonable in size and means I can update the data without rebuilding the image.
 
-The image / env is **slim** (~3 GB) — environment + notebooks + gammapy tutorial datasets only. The lecture data (~700 MB FT1/FT2/configs/ancillaries for PG 1553 and TXS 0506) is downloaded on first run from a URL (Dropbox).
+## Docker (the easy path)
 
-Pick **one** path:
+You'll need Docker Desktop on Mac/Windows or `docker` on Linux, plus about 4 GB of free disk for the image. On Apple Silicon, fermitools is x86_64-only, so Docker Desktop runs the image through Rosetta. It's slower than native, but it works.
 
-| | when to use | size | first-run time |
-|---|---|---|---|
-| **Docker** | you don't have conda or want zero-friction reproducibility | image ~3 GB + 700 MB data | a few minutes |
-| **Conda** | you already use conda, want native performance, or want to edit dependencies | env ~3 GB + 700 MB data | ~10 min |
+If I've already pushed the image to Docker Hub:
 
----
-
-## Option A — Docker
-
-### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Mac/Windows) or `docker` (Linux), running.
-- ~4 GB free disk.
-- Apple Silicon: Docker uses Rosetta automatically — fermitools is x86_64-only.
-
-### Pull (if your instructor pushed to Docker Hub)
 ```bash
-docker pull <instructor-username>/fermipy-lecture:latest
-docker volume create fermipy-data    # persist the lecture data across runs
-docker run --rm -p 8888:8888 \
-    -v fermipy-data:/opt/lecture-data \
-    <instructor-username>/fermipy-lecture:latest
+docker volume create fermipy-data
+docker run --rm -p 8888:8888 -v fermipy-data:/opt/lecture-data mcrnogor23/fermipy-lecture:latest
 ```
 
-### …or load a tarball
+Open the URL it prints. The first launch downloads the lecture data into the named volume; subsequent launches reuse it.
+
+If you have a tarball instead of a Docker Hub pull:
+
 ```bash
 gunzip -c fermipy-lecture.tar.gz | docker load
 docker volume create fermipy-data
 docker run --rm -p 8888:8888 -v fermipy-data:/opt/lecture-data fermipy-lecture:latest
 ```
 
-Open the URL the container prints (`http://localhost:8888/...`) in your browser.
+## Conda (if you'd rather skip Docker)
 
-The first `docker run` downloads ~700 MB of data into the named volume. Subsequent runs reuse it.
+You'll need miniforge or any conda distribution. From this folder:
 
----
-
-## Option B — Conda
-
-### Prerequisites
-- [Miniforge](https://github.com/conda-forge/miniforge) or any conda distribution.
-- ~4 GB free disk + internet for ~1 GB of downloads.
-
-### Setup
-From this folder:
 ```bash
 bash setup_conda.sh
 ```
-That script:
-1. Creates the `fermipy-lecture` env from `environment.yml`.
-2. Downloads the lecture data via `setup_data.sh` (default: from the instructor's Dropbox) into `~/fermipy-lecture-data/`.
-3. Downloads the gammapy tutorial datasets into `~/gammapy-data/1.3/`.
-4. Wires `LECTURE_DATA` and `GAMMAPY_DATA` env vars into the conda activate hook.
 
-### Run
+That creates a `fermipy-lecture` env, downloads the lecture data into `~/fermipy-lecture-data/`, downloads the gammapy tutorial datasets into `~/gammapy-data/1.3/`, and wires both paths into the env's activate hook so the notebooks find them. Takes about 10 min on a decent connection.
+
+Then:
+
 ```bash
 conda activate fermipy-lecture
 cd student-environment/notebooks
 jupyter lab
 ```
 
----
-
-## Instructor: how to prepare and distribute
-
-### 1. Build the data tarball
-```bash
-cd /path/to/fermipy            # the directory above lecture/
-tar czf lecture-data.tar.gz -C lecture data/pg1553 data/txs0506
-# or, if you want the tarball to expand into "lecture-data/pg1553" etc.
-# (matches the --strip-components=1 in setup_data.sh):
-mkdir -p _staging/lecture-data
-cp -r lecture/data/pg1553 lecture/data/txs0506 _staging/lecture-data/
-tar czf lecture-data.tar.gz -C _staging lecture-data
-rm -rf _staging
-```
-
-### 2. Upload to Dropbox and get a direct-download link
-- Right-click `lecture-data.tar.gz` → Share → Copy link
-- Paste into a text editor, change the trailing `?dl=0` → `?dl=1`
-- Paste that URL into `DEFAULT_URL` at the top of `setup_data.sh`
-
-### 3. Build the Docker image
-```bash
-bash student-environment/build.sh
-```
-
-### 4. Distribute
-- **Docker Hub** (best UX for students):
-  ```bash
-  docker tag  fermipy-lecture:latest <your-username>/fermipy-lecture:latest
-  docker push <your-username>/fermipy-lecture:latest
-  ```
-  (Needs `docker login`. Free for public images.)
-- **Tarball**:
-  ```bash
-  docker save fermipy-lecture:latest | gzip > fermipy-lecture.tar.gz
-  ```
-  Upload the tarball anywhere students can download it.
-
-### 5. Test it from a clean state
-```bash
-docker volume rm fermipy-data || true
-docker volume create fermipy-data
-docker run --rm -p 8888:8888 -v fermipy-data:/opt/lecture-data fermipy-lecture:latest
-# Open http://localhost:8888 and click through one notebook.
-```
-
----
-
-## Bundled versions
+## What's actually in the environment
 
 ```
 python      3.9.22
@@ -132,36 +55,68 @@ numpy       1.26
 matplotlib  3.9
 ```
 
----
+In the container, the lecture data ends up at `/opt/lecture-data/{pg1553,txs0506}/` (the named Docker volume), the gammapy tutorial data is baked in at `/opt/gammapy-data/1.3/`, the Fermi diffuse models live where fermitools puts them under `$CONDA_PREFIX/share/fermitools/refdata/`, and the notebooks are at `/home/student/notebooks/`.
 
-## Where things live
+In the conda case the lecture data is in `~/fermipy-lecture-data/` and the gammapy data in `~/gammapy-data/1.3/`. The notebooks read whichever via `$LECTURE_DATA` / `$GAMMAPY_DATA` / `$CONDA_PREFIX`, so the same `.ipynb` files work in both layouts.
 
-| | Docker path | Conda path |
-|---|---|---|
-| Lecture data | `/opt/lecture-data/{pg1553,txs0506}/` (volume) | `~/fermipy-lecture-data/{pg1553,txs0506}/` |
-| gammapy datasets | `/opt/gammapy-data/1.3/` (in image) | `~/gammapy-data/1.3/` |
-| Fermi diffuse models | `$CONDA_PREFIX/share/fermitools/refdata/...` | same |
-| Notebooks | `/home/student/notebooks/` | `<repo>/student-environment/notebooks/` |
+## Things that bit me — keep an eye on these
 
-The notebooks read `$LECTURE_DATA` / `$GAMMAPY_DATA` / `$CONDA_PREFIX` so the same notebook works in both layouts.
+A few rough edges I hit while building this. They're documented inline in the notebooks too, but worth flagging up front:
 
----
+**`gta.lightcurve` crashes on macOS.** macOS uses `spawn` for new processes, which trips a circular import inside fermipy (`fermipy.lightcurve` ↔ `fermipy.gtanalysis`). Notebook 02 sets `multithread=False` to dodge it. Sequential is slow (30–45 min for 24 monthly bins on a cold run), but reliable.
 
-## Troubleshooting
+**`gta.sed` failing with "Brentq failed" or NaN.** The per-bin scan can land in a degenerate state if the global ROI has drifted from re-runs. The fix is to reload the saved ROI before calling `gta.sed`: `gta.load_roi('fit_txs')`. Notebook 02 already does this.
 
-**Apple Silicon Docker is slow.** Expected — fermitools is x86_64 and runs through Rosetta. Lecture notebooks still complete in well under the cited times.
+**TXS 0506+056 and the +0541 vs +0542 trap.** 3FGL has it at `+0541`; 4FGL renamed it to `+0542` because the centroid moved. Notebook 02 uses the 4FGL name. If you copy a config from somewhere older, watch out.
 
-**`setup_data.sh: DATA_URL not configured`.** The instructor hasn't published the data URL yet. Override at run time:
+**Apple Silicon throughput.** Rosetta gives you maybe half native speed on the fermitools steps. Annoying, not blocking.
+
+**Container can't reach `localhost:8888`.** Check that Docker Desktop is actually running and that you used `-p 8888:8888`. On Linux you may need `--network=host` instead.
+
+**`setup_data.sh` says `DATA_URL not configured`.** That means the URL inside the script is missing or has expired. Students can override it at the command line:
+
 ```bash
 DATA_URL="https://..." bash setup_data.sh
-# or for Docker:
+# or for the container:
 docker run -e DATA_URL="https://..." ... fermipy-lecture
 ```
 
-**`gta.lightcurve` crashes with `circular import` in spawn workers.** Already handled in notebook 02 (`multithread=False`). Sequential, ~30–45 min on first run, fast on re-run.
+## For me: rebuilding and republishing
 
-**`gta.sed` raises `Brentq failed` / NaN.** Reload the saved ROI before the SED call: `gta.load_roi('fit_txs')`. Notebook 02 does this.
+When I change the notebooks or the env, I have to redo the image. The data tarball is separate; I only redo it if the actual data changes.
 
-**`No source matching name: 4FGL J0509.4+0541`.** TXS is at `+0542` in 4FGL (the 3FGL name was `+0541`). Notebook 02 uses the correct name.
+To rebuild the data tarball (excluding macOS resource forks and Dropbox sync conflicts, both of which polluted my first attempt):
 
-**Container can't reach `localhost:8888`.** Make sure Docker Desktop is running and you used `-p 8888:8888`. On Linux you may need `--network=host` instead.
+```bash
+cd /path/to/fermipy
+mkdir -p _staging/lecture-data
+cp -R lecture/data/pg1553 lecture/data/txs0506 _staging/lecture-data/
+COPYFILE_DISABLE=1 tar czf lecture-data.tar.gz \
+    --exclude='._*' --exclude='*conflicted copy*' \
+    -C _staging lecture-data
+rm -rf _staging
+```
+
+Then drop `lecture-data.tar.gz` into Dropbox replacing the existing file — the share URL stays the same, no need to rebuild the image.
+
+To rebuild and push the image:
+
+```bash
+bash student-environment/build.sh
+docker login
+docker tag  fermipy-lecture:latest mcrnogor23/fermipy-lecture:latest
+docker push mcrnogor23/fermipy-lecture:latest
+```
+
+Or, if I want a tarball instead of a registry: `docker save fermipy-lecture:latest | gzip > fermipy-lecture.tar.gz`.
+
+To smoke-test from a clean state before announcing to students:
+
+```bash
+docker rmi mcrnogor23/fermipy-lecture:latest fermipy-lecture:latest 2>/dev/null
+docker volume rm fermipy-data 2>/dev/null
+docker volume create fermipy-data
+docker run --rm -p 8888:8888 -v fermipy-data:/opt/lecture-data mcrnogor23/fermipy-lecture:latest
+```
+
+That forces a fresh pull plus a fresh data fetch, which is exactly what students see.

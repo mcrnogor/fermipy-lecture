@@ -1,8 +1,9 @@
 # Fermi-LAT lecture environment.
 #
-# Slim version: env + gammapy data + notebooks baked in (~3 GB).
-# Lecture data (PG 1553, TXS 0506; ~700 MB) is fetched on first run via
-# setup_data.sh from a configurable URL (default: instructor's Dropbox).
+# Image contents: the runtime (fermipy + fermitools + gammapy + JupyterLab),
+# the patched notebooks, and the gammapy tutorial datasets.
+# Lecture data (PG 1553, TXS 0506) is downloaded separately on first run via
+# setup_data.sh from a Dropbox URL configured in that script.
 #
 # Build:
 #   bash student-environment/build.sh
