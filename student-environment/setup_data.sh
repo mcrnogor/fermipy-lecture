@@ -5,10 +5,8 @@
 # Usage:
 #   bash setup_data.sh [target_dir]
 #
-# The URL is hard-coded below — INSTRUCTOR: edit DATA_URL after you've uploaded
-# the tarball to Dropbox.  To get a Dropbox direct-download link:
-#   1. Right-click the file in Dropbox → Share → Copy link
-#   2. Change the trailing "?dl=0" to "?dl=1"
+# The URL is hard-coded below — If needed: edit DATA_URL after you've uploaded
+# the tarball to Dropbox. 
 #
 # It can also be overridden at run time:
 #   DATA_URL=https://example.com/data.tar.gz bash setup_data.sh

@@ -1,6 +1,6 @@
-# Fermi-LAT analysis with fermipy and gammapy
+# Fermi-LAT analysis with fermipy and gammapy: FK8045: Astroparticle Physics
 
-Notebook materials for a lecture on γ-ray analysis with fermipy and gammapy in FK8045: Astroparticle Physics . Four notebooks and a Docker image so students don't have to fight a conda install before they've learned anything.
+Notebook materials for a lecture on gamma-ray analysis with fermipy and gammapy in FK8045: Astroparticle Physics taught at Stockholm University. 
 
 ## Notebooks
 

@@ -2,8 +2,7 @@
 
 This folder has a Docker recipe and a conda recipe. Either one gets you a working environment with fermipy 1.4, gammapy 1.3, fermitools 2.2, JupyterLab, and the four lecture notebooks.
 
-The lecture data itself (~700 MB of FT1/FT2 plus the precomputed source maps for PG 1553 and TXS 0506) lives separately on Dropbox and gets pulled at first run by [`setup_data.sh`](setup_data.sh). That keeps the image/env reasonable in size and means I can update the data without rebuilding the image.
-
+The lecture data itself (~700 MB of FT1/FT2 plus the precomputed source maps for PG 1553 and TXS 0506) lives separately on Dropbox and gets pulled at first run by [`setup_data.sh`](setup_data.sh).
 ## Docker (the easy path)
 
 You'll need Docker Desktop on Mac/Windows or `docker` on Linux, plus about 4 GB of free disk for the image. On Apple Silicon, fermitools is x86_64-only, so Docker Desktop runs the image through Rosetta. It's slower than native, but it works.
@@ -59,14 +58,12 @@ In the container, the lecture data ends up at `/opt/lecture-data/{pg1553,txs0506
 
 In the conda case the lecture data is in `~/fermipy-lecture-data/` and the gammapy data in `~/gammapy-data/1.3/`. The notebooks read whichever via `$LECTURE_DATA` / `$GAMMAPY_DATA` / `$CONDA_PREFIX`, so the same `.ipynb` files work in both layouts.
 
-## Things that bit me — keep an eye on these
+## I hit these issues with the set-up
 
-A few rough edges I hit while building this. They're documented inline in the notebooks too, but worth flagging up front:
+A few rough edges I hit while building this.
 
 **`gta.lightcurve` crashes on macOS.** macOS uses `spawn` for new processes, which trips a circular import inside fermipy (`fermipy.lightcurve` ↔ `fermipy.gtanalysis`). Notebook 02 sets `multithread=False` to avoid it. Sequential is slow (30–45 min for 24 monthly bins on a cold run), but reliable.
 
-**TXS 0506+056 and the +0541 vs +0542 trap.** 3FGL has it at `+0541`; 4FGL renamed it to `+0542` because the centroid moved. Notebook 02 uses the 4FGL name. If you copy a config from somewhere older, watch out.
+**TXS 0506+056 and the +0541 vs +0542.** 3FGL has it at `+0541`; 4FGL renamed it to `+0542` because the centroid moved. Notebook 02 uses the 4FGL name. If you copy a config from somewhere older, watch out.
 
 **Apple Silicon throughput.** Rosetta gives you maybe half native speed on the fermitools steps.
-
-**Container can't reach `localhost:8888`.** Check that Docker Desktop is actually running and that you used `-p 8888:8888`. On Linux you may need `--network=host` instead.

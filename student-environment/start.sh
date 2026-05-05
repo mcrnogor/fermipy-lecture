@@ -1,5 +1,5 @@
 #!/bin/bash
-# Container entrypoint.
+# Container entry point.
 #   1. If the lecture data isn't present, fetch it via setup_data.sh.
 #   2. Activate the conda env and launch JupyterLab on 0.0.0.0:8888 (no auth — local use only).
 # Note: no `set -u`.  fermitools' activate hook references $CALDB
