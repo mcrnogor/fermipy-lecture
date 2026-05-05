@@ -8,7 +8,7 @@ The lecture data itself (~700 MB of FT1/FT2 plus the precomputed source maps for
 
 You'll need Docker Desktop on Mac/Windows or `docker` on Linux, plus about 4 GB of free disk for the image. On Apple Silicon, fermitools is x86_64-only, so Docker Desktop runs the image through Rosetta. It's slower than native, but it works.
 
-If I've already pushed the image to Docker Hub:
+I've pushed the image to Docker Hub:
 
 ```bash
 docker volume create fermipy-data
@@ -63,60 +63,10 @@ In the conda case the lecture data is in `~/fermipy-lecture-data/` and the gamma
 
 A few rough edges I hit while building this. They're documented inline in the notebooks too, but worth flagging up front:
 
-**`gta.lightcurve` crashes on macOS.** macOS uses `spawn` for new processes, which trips a circular import inside fermipy (`fermipy.lightcurve` ↔ `fermipy.gtanalysis`). Notebook 02 sets `multithread=False` to dodge it. Sequential is slow (30–45 min for 24 monthly bins on a cold run), but reliable.
-
-**`gta.sed` failing with "Brentq failed" or NaN.** The per-bin scan can land in a degenerate state if the global ROI has drifted from re-runs. The fix is to reload the saved ROI before calling `gta.sed`: `gta.load_roi('fit_txs')`. Notebook 02 already does this.
+**`gta.lightcurve` crashes on macOS.** macOS uses `spawn` for new processes, which trips a circular import inside fermipy (`fermipy.lightcurve` ↔ `fermipy.gtanalysis`). Notebook 02 sets `multithread=False` to avoid it. Sequential is slow (30–45 min for 24 monthly bins on a cold run), but reliable.
 
 **TXS 0506+056 and the +0541 vs +0542 trap.** 3FGL has it at `+0541`; 4FGL renamed it to `+0542` because the centroid moved. Notebook 02 uses the 4FGL name. If you copy a config from somewhere older, watch out.
 
-**Apple Silicon throughput.** Rosetta gives you maybe half native speed on the fermitools steps. Annoying, not blocking.
+**Apple Silicon throughput.** Rosetta gives you maybe half native speed on the fermitools steps.
 
 **Container can't reach `localhost:8888`.** Check that Docker Desktop is actually running and that you used `-p 8888:8888`. On Linux you may need `--network=host` instead.
-
-**`setup_data.sh` says `DATA_URL not configured`.** That means the URL inside the script is missing or has expired. Students can override it at the command line:
-
-```bash
-DATA_URL="https://..." bash setup_data.sh
-# or for the container:
-docker run -e DATA_URL="https://..." ... fermipy-lecture
-```
-
-## For me: rebuilding and republishing
-
-When I change the notebooks or the env, I have to redo the image. The data tarball is separate; I only redo it if the actual data changes.
-
-To rebuild the data tarball (excluding macOS resource forks and Dropbox sync conflicts, both of which polluted my first attempt):
-
-```bash
-cd /path/to/fermipy
-mkdir -p _staging/lecture-data
-cp -R lecture/data/pg1553 lecture/data/txs0506 _staging/lecture-data/
-COPYFILE_DISABLE=1 tar czf lecture-data.tar.gz \
-    --exclude='._*' --exclude='*conflicted copy*' \
-    -C _staging lecture-data
-rm -rf _staging
-```
-
-Then drop `lecture-data.tar.gz` into Dropbox replacing the existing file — the share URL stays the same, no need to rebuild the image.
-
-To rebuild and push the image:
-
-```bash
-bash student-environment/build.sh
-docker login
-docker tag  fermipy-lecture:latest mcrnogor23/fermipy-lecture:latest
-docker push mcrnogor23/fermipy-lecture:latest
-```
-
-Or, if I want a tarball instead of a registry: `docker save fermipy-lecture:latest | gzip > fermipy-lecture.tar.gz`.
-
-To smoke-test from a clean state before announcing to students:
-
-```bash
-docker rmi mcrnogor23/fermipy-lecture:latest fermipy-lecture:latest 2>/dev/null
-docker volume rm fermipy-data 2>/dev/null
-docker volume create fermipy-data
-docker run --rm -p 8888:8888 -v fermipy-data:/opt/lecture-data mcrnogor23/fermipy-lecture:latest
-```
-
-That forces a fresh pull plus a fresh data fetch, which is exactly what students see.
